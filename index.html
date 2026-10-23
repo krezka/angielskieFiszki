@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important} img{max-width:100%}</style>
+</head>
+<body>
+<title>Angielskie karty trójdzielne</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;600&display=swap">
+<style>
+/* Layout: toolbar of category chips, then either print sheets (control | picture | label per row) or one big flashcard */
+:root {
+  --bg: #eef3f1;
+  --surface: #ffffff;
+  --fg: #1f2d2a;
+  --muted: #5b6d68;
+  --line: #cfdcd8;
+  --accent: #2a7d6b;
+  --accent-fg: #ffffff;
+  --paper: #ffffff;
+  --ink: #1d2422;
+  --cut: #9aa8a4;
+  --font-ui: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --font-word: "Andika", "Comic Sans MS", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151c1a; --surface: #1e2826; --fg: #e4ece9; --muted: #9db0aa;
+    --line: #33423e; --accent: #5cc0a8; --accent-fg: #0f1f1b; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151c1a; --surface: #1e2826; --fg: #e4ece9; --muted: #9db0aa;
+  --line: #33423e; --accent: #5cc0a8; --accent-fg: #0f1f1b; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-ui); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1 { font-size: 1.9rem; font-weight: 600; margin: 0; text-wrap: balance; line-height: 1.15; }
+.lead { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.label { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: .95rem; cursor: pointer;
+  border: 2px solid var(--line); background: transparent; color: var(--fg);
+  border-radius: 999px; padding: 5px 14px; display: inline-flex; align-items: center; gap: 6px;
+}
+.chip .dot { width: 10px; height: 10px; border-radius: 50%; }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
+.chip:focus-visible, .btn:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+.toggle { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+.seg { display: inline-flex; border: 2px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { font: inherit; border: 0; background: transparent; color: var(--fg); padding: 6px 16px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+details summary { cursor: pointer; color: var(--accent); }
+textarea {
+  width: 100%; min-height: 110px; margin-top: 8px; font: 1rem/1.5 var(--font-word);
+  border: 2px solid var(--line); border-radius: 10px; padding: 10px; background: var(--bg); color: var(--fg);
+}
+.hint { font-size: .88rem; color: var(--muted); margin: 0; }
+.btn {
+  font: inherit; cursor: pointer; border-radius: 999px; padding: 8px 18px;
+  border: 2px solid var(--accent); background: var(--accent); color: var(--accent-fg);
+}
+.btn.ghost { background: transparent; color: var(--accent); }
+
+/* ---------- Cards (paper) ---------- */
+.pages { display: flex; flex-direction: column; gap: 12px; }
+.sheet { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.card {
+  background: var(--paper); color: var(--ink);
+  border: 2px dashed var(--cut); border-radius: 6px;
+  container-type: inline-size; display: flex; flex-direction: column; overflow: hidden;
+  border-top: 6px solid var(--cat);
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.pic { aspect-ratio: 1; display: grid; place-items: center; font-size: 58cqi; line-height: 1; }
+.pic svg { width: 78%; height: auto; display: block; }
+.swatch { width: 66%; aspect-ratio: 1; border-radius: 50%; border: 2px solid #00000022; }
+.word {
+  font-family: var(--font-word); font-weight: 700; text-align: center;
+  font-size: clamp(12px, 15cqi, 34px); line-height: 1.1;
+  padding: 6px 4px; min-height: 2.2em; display: grid; place-items: center;
+  border-top: 2px dashed var(--cut);
+}
+.word small { display: block; font-weight: 400; font-size: .5em; color: #6a7774; margin-top: 3px; }
+
+/* ---------- Flashcard mode ---------- */
+/* Full-screen on the phone: topic strip, card filling the rest, one Next button */
+html.play-mode, html.play-mode body { height: 100%; overflow: hidden; }
+html.play-mode body { padding-block: 10px 12px; }
+html.play-mode .wrap { height: 100%; max-width: 560px; }
+html.play-mode header, html.play-mode .panel { display: none; }
+html.play-mode #out { flex: 1; min-height: 0; display: flex; }
+.play { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.topics { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.icon-btn {
+  flex: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--line); background: transparent; color: var(--muted);
+  display: grid; place-items: center;
+}
+.icon-btn:focus-visible, .big:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.topic-scroll {
+  position: relative; flex: 1; min-width: 0; display: flex; gap: 8px; padding: 2px 14px;
+  overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+}
+.topic-scroll::-webkit-scrollbar { display: none; }
+.topic-scroll .chip { flex: none; white-space: nowrap; }
+.big { flex: 1; min-height: 0; width: 100%; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.big .pic { flex: 1; min-height: 0; aspect-ratio: auto; container-type: size; font-size: 60cqmin; }
+.big .pic svg { width: 72cqmin; height: 72cqmin; }
+.big .swatch { width: 60cqmin; }
+.big .word { position: relative; font-size: clamp(28px, 11cqi, 60px); min-height: 2.2em; }
+.big .word.hidden-word { color: transparent; }
+.big .word.hidden-word::after { content: "Dotknij, żeby usłyszeć"; color: #8a9794; font-family: var(--font-ui); font-weight: 500; font-size: 17px; position: absolute; }
+.next { width: 100%; padding: 14px; font-size: 1.25rem; font-weight: 600; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .big .pic { transition: transform .2s; }
+  .big:active .pic { transform: scale(.96); }
+}
+
+/* ---------- Print: A4, 3 x 3 cards per page ---------- */
+/* Each .page holds at most 9 cards (~230mm tall) and starts a new sheet; nothing follows the last one. */
+@page { size: A4; margin: 10mm; }
+@media print {
+  :root { color-scheme: light; padding: 0 !important; }
+  html, body { height: auto !important; }
+  body { background: #fff; padding: 0 !important; }
+  .wrap { max-width: none; display: block; }
+  .no-print { display: none !important; }
+  .pages { display: block; }
+  .page { break-inside: avoid; page-break-inside: avoid; }
+  .page + .page { break-before: page; page-break-before: always; }
+  .sheet { display: grid; grid-template-columns: repeat(3, 55mm); gap: 4mm 5mm; justify-content: center; }
+  .card { border-color: #999; break-inside: avoid; page-break-inside: avoid; }
+  .pic { aspect-ratio: auto; height: 53mm; }
+  .word { min-height: 0; height: 15mm; font-size: 7.5mm; }
+}
+</style>
+
+<div class="wrap">
+  <header class="no-print">
+    <h1>Angielskie karty trójdzielne</h1>
+    <p class="lead">Karty z obrazkiem i podpisem, po trzy w rzędzie. Wydrukuj zestaw dwa razy: jeden zostaje w całości jako karty kontrolne, w drugim odetnij podpisy od obrazków.</p>
+  </header>
+
+  <section class="panel no-print" aria-label="Ustawienia">
+    <div>
+      <div class="label">Temat</div>
+      <div class="chips" id="cats"></div>
+    </div>
+    <div class="row">
+      <div class="seg" role="group" aria-label="Tryb">
+        <button type="button" id="mode-print" aria-pressed="true">Karty do druku</button>
+        <button type="button" id="mode-play" aria-pressed="false">Fiszki do zabawy</button>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-pl"> polskie tłumaczenie na karcie kontrolnej</label>
+      <label class="toggle"><input type="checkbox" id="opt-upper"> WIELKIE LITERY</label>
+    </div>
+    <details>
+      <summary>Dodaj własne słówka</summary>
+      <textarea id="custom" spellcheck="false" placeholder="🐢 turtle - żółw"></textarea>
+      <p class="hint">Jedno słowo w linii: emoji, słowo po angielsku, opcjonalnie myślnik i tłumaczenie. Pojawią się jako temat „Moje słówka”.</p>
+    </details>
+    <p class="hint" id="print-hint">Drukowanie: otwórz ten plik w przeglądarce na komputerze i naciśnij Ctrl+P (A4, 9 kart na stronę).</p>
+  </section>
+
+  <main id="out"></main>
+</div>
+
+<script>
+const CATS = [
+  { id: "animals", name: "Zwierzęta", color: "#e07a2f", words: [
+    ["🐱","cat","kot"],["🐶","dog","pies"],["🐟","fish","ryba"],["🐦","bird","ptak"],
+    ["🐴","horse","koń"],["🐮","cow","krowa"],["🐷","pig","świnia"],["🐰","rabbit","królik"],
+    ["🦆","duck","kaczka"],["🐸","frog","żaba"],["🦁","lion","lew"],["🐘","elephant","słoń"]]},
+  { id: "fruit", name: "Owoce i warzywa", color: "#d93a4a", words: [
+    ["🍎","apple","jabłko"],["🍌","banana","banan"],["🍐","pear","gruszka"],["🍊","orange","pomarańcza"],
+    ["🍓","strawberry","truskawka"],["🍇","grapes","winogrona"],["🍋","lemon","cytryna"],["🍒","cherries","wiśnie"],
+    ["🥕","carrot","marchewka"],["🍅","tomato","pomidor"],["🥔","potato","ziemniak"],["🍉","watermelon","arbuz"]]},
+  { id: "food", name: "Jedzenie", color: "#b8862b", words: [
+    ["🍞","bread","chleb"],["🥛","milk","mleko"],["🧀","cheese","ser"],["🥚","egg","jajko"],
+    ["🍰","cake","ciasto"],["🍦","ice cream","lody"],["🍕","pizza","pizza"],["🍲","soup","zupa"],
+    ["🧃","juice","sok"],["🥪","sandwich","kanapka"],["🍪","cookie","ciastko"],["🍯","honey","miód"]]},
+  { id: "colours", name: "Kolory", color: "#7b4fc4", words: [
+    ["#e53935","red","czerwony"],["#1e66d0","blue","niebieski"],["#2e9d4a","green","zielony"],["#f6c915","yellow","żółty"],
+    ["#f28a1c","orange","pomarańczowy"],["#8e44ad","purple","fioletowy"],["#f07fb0","pink","różowy"],["#7a4a2a","brown","brązowy"],
+    ["#1a1a1a","black","czarny"],["#ffffff","white","biały"],["#8c8c8c","grey","szary"]]},
+  { id: "home", name: "Dom", color: "#3a8fb7", words: [
+    ["🏠","house","dom"],["🛏️","bed","łóżko"],["🪑","chair","krzesło"],["🚪","door","drzwi"],
+    ["🪟","window","okno"],["🛋️","sofa","kanapa"],["🛁","bath","wanna"],["🔑","key","klucz"],
+    ["☕","cup","kubek"],["🥄","spoon","łyżka"],["🕰️","clock","zegar"],["📖","book","książka"]]},
+  { id: "toys", name: "Zabawki", color: "#d14f9a", words: [
+    ["⚽","ball","piłka"],["🧸","teddy bear","miś"],["🪁","kite","latawiec"],["🎈","balloon","balon"],
+    ["🧩","puzzle","puzzle"],["🤖","robot","robot"],["🥁","drum","bęben"]]},
+  { id: "transport", name: "Pojazdy", color: "#2d6fb0", words: [
+    ["🚗","car","samochód"],["🚌","bus","autobus"],["🚆","train","pociąg"],["✈️","plane","samolot"],
+    ["⛵","boat","łódka"],["🚲","bike","rower"],["🚢","ship","statek"],["🚜","tractor","traktor"],
+    ["🚀","rocket","rakieta"],["🚁","helicopter","helikopter"],["🚕","taxi","taksówka"],["🚒","fire engine","wóz strażacki"]]},
+  { id: "nature", name: "Przyroda i pogoda", color: "#3c9a5f", words: [
+    ["☀️","sun","słońce"],["🌙","moon","księżyc"],["⭐","star","gwiazda"],["☁️","cloud","chmura"],
+    ["🌧️","rain","deszcz"],["❄️","snow","śnieg"],["🌳","tree","drzewo"],["🌸","flower","kwiat"],
+    ["🍃","leaf","liść"],["🌈","rainbow","tęcza"],["⛰️","mountain","góra"],["🌊","sea","morze"]]},
+  { id: "clothes", name: "Ubrania", color: "#c0592f", words: [
+    ["👕","T-shirt","koszulka"],["👖","trousers","spodnie"],["👗","dress","sukienka"],["🧥","coat","płaszcz"],
+    ["🧢","cap","czapka z daszkiem"],["👒","hat","kapelusz"],["🧣","scarf","szalik"],["🧤","gloves","rękawiczki"],
+    ["🧦","socks","skarpetki"],["👟","shoes","buty"],["🥾","boots","kozaki"],["👓","glasses","okulary"]]},
+  { id: "body", name: "Ciało", color: "#c4566b", words: [
+    ["👁️","eye","oko"],["👂","ear","ucho"],["👃","nose","nos"],["👄","mouth","usta"],
+    ["🦷","tooth","ząb"],["✋","hand","ręka"],["🦵","leg","noga"],["🦶","foot","stopa"]]},
+];
+const LIST = { id: "szkolne", name: "Szkolne", color: "#2a7d6b", words: [
+  ["svg:computer","computer","komputer"],["svg:crayon","crayon","kredka"],["svg:pen","pen","długopis"],["svg:pencil","pencil","ołówek"],
+  ["svg:pencilcase","pencil case","piórnik"],["svg:rubber","rubber","gumka"],["svg:ruler","ruler","linijka"],["svg:sharpener","sharpener","temperówka"],
+  ["svg:scissors","scissors","nożyczki"],["svg:backpack","backpack","plecak"],
+  ["svg:bin","bin","kosz na śmieci"],["svg:cupboard","cupboard","szafka"],["svg:desk","desk","biurko, ławka"],["svg:shelf","shelf","półka"],
+  ["svg:in","in","w"],["svg:on","on","na"],["svg:under","under","pod"]]};
+CATS.unshift(LIST, ...CATS.splice(CATS.findIndex(c => c.id === "colours"), 1));
+
+const S = 'stroke="#2b2b2b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"';
+const BALL = (cx, cy) => `<circle cx="${cx}" cy="${cy}" r="14" fill="#e53935" ${S}/><circle cx="${cx - 5}" cy="${cy - 5}" r="3.5" fill="#ffffff"/>`;
+const FLOOR = `<line x1="4" y1="88" x2="96" y2="88" stroke="#b5bfbc" stroke-width="2.5" stroke-linecap="round"/>`;
+const WOOD = "#c98b4f", WOOD_DARK = "#a86d36";
+const SVGS = {
+  pencilcase: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"> <defs> <linearGradient id="pcBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fb2ee"/><stop offset="1" stop-color="#3d74c9"/></linearGradient> </defs> <g transform="rotate(-24 34 46)"> <rect x="28" y="16" width="11" height="36" fill="#f6c915" stroke="#2b2b2b" stroke-width="2.2"/> <line x1="33.5" y1="18" x2="33.5" y2="50" stroke="#e0ab0c" stroke-width="2"/> <rect x="28" y="12" width="11" height="5" fill="#c9ced3" stroke="#2b2b2b" stroke-width="2.2"/> <rect x="28" y="5" width="11" height="7" rx="3" fill="#f28fb0" stroke="#2b2b2b" stroke-width="2.2"/> </g> <g transform="rotate(14 54 46)"> <rect x="49" y="14" width="10" height="38" fill="#e53935" stroke="#2b2b2b" stroke-width="2.2"/> <path d="M49 14 L54 3 L59 14 Z" fill="#f2c79a" stroke="#2b2b2b" stroke-width="2.2" stroke-linejoin="round"/> <path d="M52 7.5 L54 3 L56 7.5 Z" fill="#e53935"/> </g> <g transform="rotate(32 68 48)"> <rect x="63" y="22" width="10" height="30" fill="#2e9d4a" stroke="#2b2b2b" stroke-width="2.2"/> <path d="M63 22 L68 11 L73 22 Z" fill="#f2c79a" stroke="#2b2b2b" stroke-width="2.2" stroke-linejoin="round"/> <path d="M66 15.5 L68 11 L70 15.5 Z" fill="#2e9d4a"/> </g> <path d="M8 52 Q8 42 20 42 H80 Q92 42 92 52 V74 Q92 86 78 86 H22 Q8 86 8 74 Z" fill="url(#pcBody)" stroke="#2b2b2b" stroke-width="2.5" stroke-linejoin="round"/> <path d="M14 76 Q50 82 86 76" fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/> <path d="M12 50 H88" stroke="#2b2b2b" stroke-width="5" stroke-linecap="round"/> <path d="M12 50 H88" stroke="#d6dbe0" stroke-width="2.4" stroke-dasharray="2 2"/> <rect x="78" y="46" width="8" height="8" rx="2" fill="#c9ced3" stroke="#2b2b2b" stroke-width="2"/> <path d="M82 54 L82 66" stroke="#2b2b2b" stroke-width="2"/> <rect x="78" y="62" width="8" height="12" rx="4" fill="#f6c915" stroke="#2b2b2b" stroke-width="2"/> <path d="M30 60 l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" fill="#f6c915" stroke="#2b2b2b" stroke-width="1.8" stroke-linejoin="round"/> </svg>`,
+  rubber: `<g transform="translate(50 50) scale(1.25) rotate(-18) translate(-53 -51)">
+    <path d="M14 46 L26 34 H92 L80 46 Z" fill="#f9b8cf" ${S}/>
+    <rect x="14" y="46" width="66" height="22" fill="#f28fb0" ${S}/>
+    <path d="M52 46 L64 34 H92 L80 46 Z" fill="#7fb2ee" ${S}/>
+    <rect x="52" y="46" width="28" height="22" fill="#4f8fd6" ${S}/>
+    <path d="M80 46 L92 34 V56 L80 68 Z" fill="#2f63b5" ${S}/>
+    <path d="M58 52 H74 M58 58 H70" stroke="#ffffff" stroke-opacity=".6" stroke-width="2.5" stroke-linecap="round"/></g>`,
+  scissors: `<path d="M38 68 L47 55 M62 68 L53 55" stroke="#2b2b2b" stroke-width="9" stroke-linecap="round"/>
+    <path d="M38 68 L47 55 M62 68 L53 55" stroke="#e53935" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M56 58 L31 9 L45 51 Z" fill="#c9ced3" ${S}/><path d="M44 58 L69 9 L55 51 Z" fill="#dfe3e7" ${S}/>
+    <circle cx="50" cy="46" r="3" fill="#8a949c" ${S} stroke-width="1.8"/>
+    <ellipse cx="33" cy="77" rx="12" ry="10" fill="none" stroke="#2b2b2b" stroke-width="10"/><ellipse cx="33" cy="77" rx="12" ry="10" fill="none" stroke="#e53935" stroke-width="5.5"/>
+    <ellipse cx="67" cy="77" rx="12" ry="10" fill="none" stroke="#2b2b2b" stroke-width="10"/><ellipse cx="67" cy="77" rx="12" ry="10" fill="none" stroke="#e53935" stroke-width="5.5"/>`,
+  backpack: `<path d="M40 24 Q40 10 50 10 Q60 10 60 24" fill="none" stroke="#2b2b2b" stroke-width="7" stroke-linecap="round"/>
+    <path d="M40 24 Q40 10 50 10 Q60 10 60 24" fill="none" stroke="#a84f1d" stroke-width="3" stroke-linecap="round"/>
+    <rect x="16" y="36" width="12" height="44" rx="6" fill="#a84f1d" ${S}/><rect x="72" y="36" width="12" height="44" rx="6" fill="#a84f1d" ${S}/>
+    <rect x="22" y="22" width="56" height="70" rx="14" fill="#e07a2f" ${S}/>
+    <path d="M22 44 Q50 52 78 44" fill="none" ${S}/>
+    <rect x="31" y="58" width="38" height="28" rx="7" fill="#c9611f" ${S}/>
+    <line x1="35" y1="66" x2="65" y2="66" stroke="#2b2b2b" stroke-width="2" stroke-dasharray="3 2.5"/>
+    <rect x="45" y="30" width="10" height="9" rx="2" fill="#f6c915" ${S}/>`,
+  bin: `<circle cx="42" cy="22" r="9" fill="#ffffff" ${S}/><path d="M37 18 L44 24 M41 15 L47 21" stroke="#8a949c" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="57" cy="20" r="7" fill="#f6c915" ${S}/>
+    <path d="M26 28 H74 L68 88 H32 Z" fill="#2e9d4a" ${S}/>
+    <path d="M38 36 L40 80 M50 36 V80 M62 36 L60 80" stroke="#1f7a37" stroke-width="3.5" stroke-linecap="round"/>
+    <rect x="21" y="22" width="58" height="9" rx="3" fill="#47b862" ${S}/>`,
+  ruler: `<g transform="rotate(-25 50 50)"><rect x="6" y="38" width="88" height="22" rx="3" fill="#f6c915" ${S}/>
+    ${Array.from({ length: 11 }, (_, i) => `<line x1="${12 + i * 7.6}" y1="38" x2="${12 + i * 7.6}" y2="${i % 5 === 0 ? 50 : 45}" stroke="#2b2b2b" stroke-width="2"/>`).join("")}</g>`,
+  sharpener: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g transform="translate(50 50) scale(1.4) translate(-37 -60)"> <path d="M10 46 L22 36 H64 L52 46 Z" fill="#7fb2ee" stroke="#2b2b2b" stroke-width="2.5" stroke-linejoin="round"/> <path d="M52 46 L64 36 V74 L52 84 Z" fill="#2f63b5" stroke="#2b2b2b" stroke-width="2.5" stroke-linejoin="round"/> <rect x="10" y="46" width="42" height="38" fill="#4f8fd6" stroke="#2b2b2b" stroke-width="2.5" stroke-linejoin="round"/> <path d="M18 43.5 L25.5 37.5 H50 L42.5 43.5 Z" fill="#dfe3e7" stroke="#2b2b2b" stroke-width="2" stroke-linejoin="round"/> <circle cx="31" cy="40.5" r="2" fill="#8a949c" stroke="#2b2b2b" stroke-width="1.2"/> <path d="M19 55 V75 M27 55 V75 M35 55 V75 M43 55 V75" stroke="#3d74c9" stroke-width="3" stroke-linecap="round"/> <ellipse cx="58" cy="58" rx="3.6" ry="9" fill="#132a52" stroke="#2b2b2b" stroke-width="2"/>      </g></svg>`,
+  cupboard: `<rect x="20" y="8" width="60" height="7" rx="2" fill="${WOOD_DARK}" ${S}/>
+    <rect x="24" y="15" width="52" height="68" fill="${WOOD}" ${S}/><line x1="50" y1="15" x2="50" y2="83" ${S}/>
+    <circle cx="45" cy="50" r="2.6" fill="#2b2b2b"/><circle cx="55" cy="50" r="2.6" fill="#2b2b2b"/>
+    <rect x="27" y="83" width="7" height="7" fill="${WOOD_DARK}" ${S}/><rect x="66" y="83" width="7" height="7" fill="${WOOD_DARK}" ${S}/>`,
+  desk: `<rect x="22" y="28" width="22" height="12" rx="1" fill="#4f8fd6" ${S}/>
+    <rect x="10" y="40" width="80" height="8" rx="2" fill="${WOOD}" ${S}/>
+    <rect x="15" y="48" width="6" height="40" fill="${WOOD_DARK}" ${S}/><rect x="79" y="48" width="6" height="40" fill="${WOOD_DARK}" ${S}/>
+    <rect x="50" y="48" width="29" height="20" fill="${WOOD}" ${S}/><circle cx="64.5" cy="58" r="2.6" fill="#2b2b2b"/>`,
+  shelf: `<rect x="18" y="30" width="9" height="30" fill="#e53935" ${S}/><rect x="28" y="35" width="9" height="25" fill="#4f8fd6" ${S}/>
+    <rect x="38" y="27" width="9" height="33" fill="#2e9d4a" ${S}/><rect x="48" y="32" width="8" height="28" fill="#f6c915" ${S} transform="rotate(14 56 60)"/>
+    <path d="M72 46 q-8 -14 0 -20 q8 6 0 20 M72 46 q-14 -4 -14 -14 M72 46 q14 -4 14 -14" fill="#2e9d4a" ${S}/>
+    <rect x="65" y="46" width="14" height="14" fill="#d9653b" ${S}/>
+    <rect x="10" y="60" width="80" height="7" rx="1" fill="${WOOD}" ${S}/>
+    <path d="M18 67 V80 L30 67 Z M82 67 V80 L70 67 Z" fill="${WOOD_DARK}" ${S}/>`,
+  pencil: `<g transform="rotate(-45 50 50)">
+    <rect x="22" y="42" width="50" height="16" fill="#f6c915" ${S}/>
+    <line x1="23" y1="50" x2="71" y2="50" stroke="#e0ab0c" stroke-width="3"/>
+    <rect x="72" y="41" width="9" height="18" fill="#c9ced3" ${S}/><line x1="76.5" y1="41" x2="76.5" y2="59" stroke="#8a949c" stroke-width="2"/>
+    <rect x="81" y="42" width="11" height="16" rx="4" fill="#f28fb0" ${S}/>
+    <path d="M22 42 L6 50 L22 58 Z" fill="#f2c79a" ${S}/><path d="M11.5 47.3 L6 50 L11.5 52.7 Z" fill="#2b2b2b" ${S}/></g>`,
+  crayon: `<g transform="rotate(-45 50 50)">
+    <path d="M26 40 L12 45 Q8 50 12 55 L26 60 Z" fill="#e53935" ${S}/>
+    <rect x="26" y="40" width="62" height="20" rx="2" fill="#e53935" ${S}/>
+    <rect x="38" y="40" width="38" height="20" fill="#b71c1c" ${S}/>
+    <path d="M44 40 V60 M70 40 V60" stroke="#f6c915" stroke-width="3"/></g>`,
+  pen: `<g transform="rotate(-45 50 50)">
+    <path d="M22 44 L9 50 L22 56 Z" fill="#d6dbe0" ${S}/><circle cx="8.5" cy="50" r="2" fill="#2b2b2b"/>
+    <rect x="22" y="42.5" width="12" height="15" rx="2" fill="#2f63b5" ${S}/>
+    <rect x="34" y="42" width="50" height="16" rx="3" fill="#4f8fd6" ${S}/>
+    <rect x="84" y="44.5" width="6" height="11" rx="2" fill="#d6dbe0" ${S}/>
+    <path d="M56 42 V36 H80 Q83 36 83 39 V42" fill="#d6dbe0" ${S}/></g>`,
+  computer: `<rect x="12" y="10" width="76" height="54" rx="4" fill="#d6dbe0" ${S}/>
+    <rect x="18" y="16" width="64" height="42" rx="1.5" fill="#4f8fd6" ${S}/>
+    <path d="M24 50 L44 22 M32 52 L50 26" stroke="#ffffff" stroke-opacity=".45" stroke-width="4" stroke-linecap="round"/>
+    <rect x="44" y="64" width="12" height="9" fill="#a6aeb5" ${S}/><rect x="30" y="73" width="40" height="6" rx="3" fill="#c9ced3" ${S}/>
+    <rect x="16" y="83" width="68" height="11" rx="2.5" fill="#f2f4f6" ${S}/>
+    <path d="M22 87 H78 M28 90.5 H72" stroke="#8a949c" stroke-width="2" stroke-dasharray="3 2.5"/>`,
+  in: `${FLOOR}<path d="M22 50 L12 38 L34 38 Z M78 50 L88 38 L66 38 Z" fill="#c48f45" ${S}/>${BALL(50, 46)}
+    <rect x="22" y="50" width="56" height="38" fill="#d9a55b" ${S}/>`,
+  on: `${FLOOR}<rect x="22" y="52" width="56" height="36" fill="#d9a55b" ${S}/><line x1="50" y1="52" x2="50" y2="88" stroke="#a8783a" stroke-width="4"/>
+    <rect x="22" y="52" width="56" height="36" fill="none" ${S}/>${BALL(50, 37.5)}`,
+  under: `${FLOOR}<rect x="10" y="34" width="80" height="8" rx="2" fill="${WOOD}" ${S}/>
+    <rect x="15" y="42" width="6" height="46" fill="${WOOD_DARK}" ${S}/><rect x="79" y="42" width="6" height="46" fill="${WOOD_DARK}" ${S}/>${BALL(50, 73.5)}`,
+};
+
+const CUSTOM = { id: "custom", name: "Moje słówka", color: "#2a7d6b", words: [] };
+
+const state = { cat: "szkolne", mode: "print", pl: false, upper: false, idx: 0, shown: false, order: null };
+const $ = (s) => document.querySelector(s);
+const esc = (s) => s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+try {
+  const saved = JSON.parse(localStorage.getItem("karty3") || "{}");
+  Object.assign(state, { pl: !!saved.pl, upper: !!saved.upper });
+  if (saved.mode === "print" || saved.mode === "play") state.mode = saved.mode;
+  else if (matchMedia("(max-width: 640px)").matches) state.mode = "play";
+  if (saved.custom) $("#custom").value = saved.custom;
+} catch (e) {}
+function save() {
+  try { localStorage.setItem("karty3", JSON.stringify({ cat: state.cat, mode: state.mode, pl: state.pl, upper: state.upper, custom: $("#custom").value })); } catch (e) {}
+}
+
+function parseCustom() {
+  CUSTOM.words = $("#custom").value.split("\n").map(l => l.trim()).filter(Boolean).map(l => {
+    const m = l.match(/^(\S+)\s+(.+?)(?:\s*[-–—;]\s*(.+))?$/);
+    return m ? [m[1], m[2].trim(), (m[3] || "").trim()] : null;
+  }).filter(Boolean);
+}
+const allCats = () => CUSTOM.words.length ? [...CATS, CUSTOM] : CATS;
+const current = () => allCats().find(c => c.id === state.cat) || CATS[0];
+
+function pic(w) {
+  if (w[0].startsWith("#")) return `<div class="pic"><div class="swatch" style="background:${w[0]}"></div></div>`;
+  if (w[0].startsWith("svg:")) {
+    const s = SVGS[w[0].slice(4)];
+    return `<div class="pic" aria-hidden="true">${s.startsWith("<svg") ? s : `<svg viewBox="0 0 100 100">${s}</svg>`}</div>`;
+  }
+  return `<div class="pic" aria-hidden="true">${esc(w[0])}</div>`;
+}
+function text(w) { return esc(state.upper ? w[1].toUpperCase() : w[1]); }
+function wordBox(w, withPl) {
+  return `<div class="word"><span>${text(w)}${withPl && w[2] ? `<small>${esc(w[2])}</small>` : ""}</span></div>`;
+}
+
+const chips = () => allCats().map(c =>
+  `<button type="button" class="chip" data-cat="${c.id}" aria-pressed="${c.id === state.cat}">
+     <span class="dot" style="background:${c.color}"></span>${esc(c.name)}</button>`).join("");
+function renderChips() { $("#cats").innerHTML = chips(); }
+
+// New random order; the word just shown never comes straight back first.
+function shuffle(n, avoid) {
+  const o = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; }
+  if (n > 1 && o[0] === avoid) [o[0], o[1]] = [o[1], o[0]];
+  return o;
+}
+
+function renderPrint(c) {
+  const pages = [];
+  for (let i = 0; i < c.words.length; i += 9) pages.push(c.words.slice(i, i + 9));
+  return `<div class="pages" style="--cat:${c.color}">` + pages.map(p => `
+    <section class="page">
+      <div class="sheet">${p.map(w => `<div class="card">${pic(w)}${wordBox(w, state.pl)}</div>`).join("")}</div>
+    </section>`).join("") + `</div>`;
+}
+
+function renderPlay(c) {
+  if (!state.order || state.order.length !== c.words.length) { state.order = shuffle(c.words.length); state.idx = 0; }
+  const w = c.words[state.order[state.idx]];
+  return `<div class="play" style="--cat:${c.color}">
+    <nav class="topics" aria-label="Temat">
+      <button type="button" class="icon-btn" id="exit-play" aria-label="Ustawienia i karty do druku">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <div class="topic-scroll" id="topic-scroll">${chips()}</div>
+    </nav>
+    <div class="card big" id="flash" role="button" tabindex="0" aria-label="Pokaż i przeczytaj słowo">
+      ${pic(w)}
+      <div class="word ${state.shown ? "" : "hidden-word"}"><span>${text(w)}${state.shown && state.pl && w[2] ? `<small>${esc(w[2])}</small>` : ""}</span></div>
+    </div>
+    <button type="button" class="btn next" id="next">Następny</button>
+  </div>`;
+}
+function centerTopic() {
+  const bar = $("#topic-scroll"), chip = bar?.querySelector('[aria-pressed="true"]');
+  if (chip) bar.scrollLeft = chip.offsetLeft - (bar.clientWidth - chip.offsetWidth) / 2;
+}
+
+function render() {
+  renderChips();
+  const c = current();
+  $("#mode-print").setAttribute("aria-pressed", state.mode === "print");
+  $("#mode-play").setAttribute("aria-pressed", state.mode === "play");
+  $("#opt-pl").checked = state.pl;
+  $("#opt-upper").checked = state.upper;
+  $("#print-hint").hidden = state.mode !== "print";
+  document.documentElement.classList.toggle("play-mode", state.mode === "play" && c.words.length > 0);
+  $("#out").innerHTML = c.words.length
+    ? (state.mode === "print" ? renderPrint(c) : renderPlay(c))
+    : `<p class="hint">Dodaj słówka w polu „Dodaj własne słówka”.</p>`;
+  centerTopic();
+}
+
+function speak() {
+  const c = current(), w = c.words[state.order[state.idx]];
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(w[1]);
+    u.lang = "en-GB"; u.rate = 0.8;
+    const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith("en"));
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function next() {
+  const n = current().words.length;
+  if (state.idx + 1 < n) state.idx++;
+  else { state.order = shuffle(n, state.order[state.idx]); state.idx = 0; }
+  state.shown = false; render();
+}
+// Tap shows the word and reads it; tapping again repeats it.
+function reveal() {
+  if (!state.shown) { state.shown = true; render(); $("#flash")?.focus({ preventScroll: true }); }
+  speak();
+}
+function setMode(m) {
+  state.mode = m; state.shown = false; state.order = null; save(); render();
+  if (m === "print") window.scrollTo(0, 0);
+}
+
+document.addEventListener("click", (e) => {
+  const chip = e.target.closest("[data-cat]");
+  if (chip) { state.cat = chip.dataset.cat; state.order = null; state.shown = false; save(); render(); return; }
+  const id = e.target.closest("[id]")?.id;
+  if (id === "mode-print" || id === "mode-play") setMode(id.slice(5));
+  else if (id === "exit-play") setMode("print");
+  else if (id === "flash") reveal();
+  else if (id === "next") next();
+});
+document.addEventListener("keydown", (e) => {
+  if (state.mode !== "play" || e.target.tagName === "TEXTAREA") return;
+  if (e.key === "ArrowRight") next();
+  else if ((e.key === " " || e.key === "Enter") && document.activeElement?.id === "flash") { e.preventDefault(); reveal(); }
+});
+window.addEventListener("resize", centerTopic);
+document.fonts?.ready.then(centerTopic);
+$("#opt-pl").addEventListener("change", e => { state.pl = e.target.checked; save(); render(); });
+$("#opt-upper").addEventListener("change", e => { state.upper = e.target.checked; save(); render(); });
+$("#custom").addEventListener("input", () => {
+  parseCustom();
+  if (CUSTOM.words.length) state.cat = "custom";
+  else if (state.cat === "custom") state.cat = "szkolne";
+  state.idx = 0; state.order = null; save(); render();
+});
+
+parseCustom();
+render();
+</script>
+
+</body>
+</html>

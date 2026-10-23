@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<style>[hidden]{display:none!important} img{max-width:100%}</style>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0} [hidden]{display:none!important} img{max-width:100%}</style>
 </head>
 <body>
 <title>Angielskie karty trójdzielne</title>
@@ -130,6 +130,30 @@ html.play-mode #out { flex: 1; min-height: 0; display: flex; }
 .big .word.hidden-word::after { content: "Dotknij, żeby usłyszeć"; color: #8a9794; font-family: var(--font-ui); font-weight: 500; font-size: 17px; position: absolute; }
 .next { width: 100%; padding: 14px; font-size: 1.25rem; font-weight: 600; }
 
+/* Quiz: hear the word, pick its picture out of four */
+.prompt {
+  flex: none; width: 100%; cursor: pointer; font: inherit;
+  flex-direction: row; align-items: center; justify-content: center; gap: 14px; padding: 12px 16px;
+}
+.prompt .w { font-family: var(--font-word); font-weight: 700; font-size: clamp(30px, 9vw, 56px); line-height: 1.1; color: var(--ink); }
+.spk { flex: none; width: 44px; height: 44px; border-radius: 50%; background: var(--cat); color: #fff; display: grid; place-items: center; }
+.stars { position: absolute; right: 12px; top: 8px; font-size: .9rem; color: #b8862b; font-variant-numeric: tabular-nums; }
+.prompt { position: relative; }
+.choices { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tile { padding: 0; font: inherit; cursor: pointer; min-height: 0; border-top-width: 2px; -webkit-tap-highlight-color: transparent; }
+.tile:focus-visible, .prompt:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.tile .pic { height: 100%; aspect-ratio: auto; container-type: size; font-size: 62cqmin; }
+.tile .pic svg { width: 78cqmin; height: 78cqmin; }
+.tile .swatch { width: 62cqmin; }
+.tile.wrong { opacity: .3; border: 2px solid #d93a4a; cursor: default; }
+.tile.right { border: 5px solid #2e9d4a; box-shadow: 0 0 0 4px #2e9d4a40; }
+@media (prefers-reduced-motion: no-preference) {
+  .tile.shake { animation: shake .35s; }
+  .tile.right .pic { animation: pop .4s; }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  @keyframes pop { 50% { transform: scale(1.12); } }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .big .pic { transition: transform .2s; }
   .big:active .pic { transform: scale(.96); }
@@ -167,8 +191,9 @@ html.play-mode #out { flex: 1; min-height: 0; display: flex; }
     </div>
     <div class="row">
       <div class="seg" role="group" aria-label="Tryb">
-        <button type="button" id="mode-print" aria-pressed="true">Karty do druku</button>
-        <button type="button" id="mode-play" aria-pressed="false">Fiszki do zabawy</button>
+        <button type="button" id="mode-print" aria-pressed="true">Druk</button>
+        <button type="button" id="mode-play" aria-pressed="false">Fiszki</button>
+        <button type="button" id="mode-quiz" aria-pressed="false">Wybierz obrazek</button>
       </div>
       <label class="toggle"><input type="checkbox" id="opt-pl"> polskie tłumaczenie na karcie kontrolnej</label>
       <label class="toggle"><input type="checkbox" id="opt-upper"> WIELKIE LITERY</label>
@@ -315,14 +340,14 @@ const SVGS = {
 
 const CUSTOM = { id: "custom", name: "Moje słówka", color: "#2a7d6b", words: [] };
 
-const state = { cat: "szkolne", mode: "print", pl: false, upper: false, idx: 0, shown: false, order: null };
+const state = { cat: "szkolne", mode: "print", pl: false, upper: false, idx: 0, shown: false, order: null, q: null, score: 0 };
 const $ = (s) => document.querySelector(s);
 const esc = (s) => s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 
 try {
   const saved = JSON.parse(localStorage.getItem("karty3") || "{}");
   Object.assign(state, { pl: !!saved.pl, upper: !!saved.upper });
-  if (saved.mode === "print" || saved.mode === "play") state.mode = saved.mode;
+  if (["print", "play", "quiz"].includes(saved.mode)) state.mode = saved.mode;
   else if (matchMedia("(max-width: 640px)").matches) state.mode = "play";
   if (saved.custom) $("#custom").value = saved.custom;
 } catch (e) {}
@@ -374,16 +399,58 @@ function renderPrint(c) {
     </section>`).join("") + `</div>`;
 }
 
-function renderPlay(c) {
-  if (!state.order || state.order.length !== c.words.length) { state.order = shuffle(c.words.length); state.idx = 0; }
-  const w = c.words[state.order[state.idx]];
-  return `<div class="play" style="--cat:${c.color}">
-    <nav class="topics" aria-label="Temat">
+function ensureOrder(c) {
+  if (!state.order || state.order.length !== c.words.length) { state.order = shuffle(c.words.length); state.idx = 0; state.q = null; }
+}
+const topicsBar = () => `<nav class="topics" aria-label="Temat">
       <button type="button" class="icon-btn" id="exit-play" aria-label="Ustawienia i karty do druku">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
       <div class="topic-scroll" id="topic-scroll">${chips()}</div>
-    </nav>
+    </nav>`;
+
+// The target word plus three other words from the same topic, in random positions.
+function newQuestion(c) {
+  const target = state.order[state.idx];
+  const others = shuffle(c.words.length).filter(i => i !== target).slice(0, 3);
+  state.q = { target, choices: shuffle(4).map(i => [target, ...others][i]), wrong: [], last: null, solved: false };
+}
+function renderQuiz(c) {
+  ensureOrder(c);
+  if (c.words.length < 4) return `<div class="play" style="--cat:${c.color}">${topicsBar()}<p class="hint">Do tej gry temat potrzebuje co najmniej 4 słów.</p></div>`;
+  if (!state.q) newQuestion(c);
+  const q = state.q, w = c.words[q.target];
+  return `<div class="play" style="--cat:${c.color}">
+    ${topicsBar()}
+    <button type="button" class="card prompt" id="say-word" aria-label="Posłuchaj jeszcze raz: ${esc(w[1])}">
+      <span class="spk" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+      <span class="w">${text(w)}</span>
+      ${state.score ? `<span class="stars" aria-label="Dobre odpowiedzi za pierwszym razem">★ ${state.score}</span>` : ""}
+    </button>
+    <div class="choices">${q.choices.map(i => {
+      const cls = q.wrong.includes(i) ? " wrong" + (q.last === i ? " shake" : "") : (q.solved && i === q.target ? " right" : "");
+      return `<button type="button" class="card tile${cls}" data-choice="${i}" aria-label="Obrazek ${q.choices.indexOf(i) + 1}"${q.wrong.includes(i) ? " disabled" : ""}>${pic(c.words[i])}</button>`;
+    }).join("")}</div>
+  </div>`;
+}
+function choose(i) {
+  const q = state.q;
+  if (!q || q.solved || q.wrong.includes(i)) return;
+  if (i === q.target) {
+    q.solved = true;
+    if (!q.wrong.length) state.score++;
+    render();
+    setTimeout(() => { if (state.q === q) next(); }, 1100);
+  } else {
+    q.wrong.push(i); q.last = i; render();
+  }
+}
+
+function renderPlay(c) {
+  ensureOrder(c);
+  const w = c.words[state.order[state.idx]];
+  return `<div class="play" style="--cat:${c.color}">
+    ${topicsBar()}
     <div class="card big" id="flash" role="button" tabindex="0" aria-label="Pokaż i przeczytaj słowo">
       ${pic(w)}
       <div class="word ${state.shown ? "" : "hidden-word"}"><span>${text(w)}${state.shown && state.pl && w[2] ? `<small>${esc(w[2])}</small>` : ""}</span></div>
@@ -401,18 +468,20 @@ function render() {
   const c = current();
   $("#mode-print").setAttribute("aria-pressed", state.mode === "print");
   $("#mode-play").setAttribute("aria-pressed", state.mode === "play");
+  $("#mode-quiz").setAttribute("aria-pressed", state.mode === "quiz");
   $("#opt-pl").checked = state.pl;
   $("#opt-upper").checked = state.upper;
   $("#print-hint").hidden = state.mode !== "print";
-  document.documentElement.classList.toggle("play-mode", state.mode === "play" && c.words.length > 0);
+  document.documentElement.classList.toggle("play-mode", state.mode !== "print" && c.words.length > 0);
   $("#out").innerHTML = c.words.length
-    ? (state.mode === "print" ? renderPrint(c) : renderPlay(c))
+    ? ({ print: renderPrint, play: renderPlay, quiz: renderQuiz }[state.mode])(c)
     : `<p class="hint">Dodaj słówka w polu „Dodaj własne słówka”.</p>`;
   centerTopic();
 }
 
 function speak() {
-  const c = current(), w = c.words[state.order[state.idx]];
+  const c = current(), w = c.words[state.order?.[state.idx]];
+  if (!w) return;
   try {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(w[1]);
@@ -426,7 +495,8 @@ function next() {
   const n = current().words.length;
   if (state.idx + 1 < n) state.idx++;
   else { state.order = shuffle(n, state.order[state.idx]); state.idx = 0; }
-  state.shown = false; render();
+  state.shown = false; state.q = null; render();
+  if (state.mode === "quiz") speak();
 }
 // Tap shows the word and reads it; tapping again repeats it.
 function reveal() {
@@ -434,17 +504,25 @@ function reveal() {
   speak();
 }
 function setMode(m) {
-  state.mode = m; state.shown = false; state.order = null; save(); render();
+  state.mode = m; state.shown = false; state.order = null; state.q = null; state.score = 0; save(); render();
   if (m === "print") window.scrollTo(0, 0);
+  if (m === "quiz") speak();
 }
 
 document.addEventListener("click", (e) => {
   const chip = e.target.closest("[data-cat]");
-  if (chip) { state.cat = chip.dataset.cat; state.order = null; state.shown = false; save(); render(); return; }
+  if (chip) {
+    state.cat = chip.dataset.cat; state.order = null; state.q = null; state.shown = false; save(); render();
+    if (state.mode === "quiz") speak();
+    return;
+  }
+  const tile = e.target.closest("[data-choice]");
+  if (tile) { choose(+tile.dataset.choice); return; }
   const id = e.target.closest("[id]")?.id;
-  if (id === "mode-print" || id === "mode-play") setMode(id.slice(5));
+  if (id === "mode-print" || id === "mode-play" || id === "mode-quiz") setMode(id.slice(5));
   else if (id === "exit-play") setMode("print");
   else if (id === "flash") reveal();
+  else if (id === "say-word") speak();
   else if (id === "next") next();
 });
 document.addEventListener("keydown", (e) => {

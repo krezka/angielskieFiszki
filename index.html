@@ -106,7 +106,28 @@ html.play-mode .wrap { height: 100%; max-width: 560px; }
 html.play-mode header, html.play-mode .panel { display: none; }
 html.play-mode #out { flex: 1; min-height: 0; display: flex; }
 .play { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
-.topics { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.topics { position: relative; display: flex; gap: 8px; align-items: center; min-width: 0; }
+.menu {
+  position: absolute; top: 48px; left: 0; z-index: 5; width: min(360px, 100%);
+  display: flex; flex-direction: column; gap: 8px; padding: 10px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+  box-shadow: 0 10px 30px #0003;
+}
+.games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.game {
+  font: inherit; font-size: 1.1rem; font-weight: 600; line-height: 1.2; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+  padding: 16px 8px 14px; border-radius: 14px; border: 3px solid var(--line);
+  background: var(--bg); color: var(--fg);
+}
+.game svg { width: 76px; height: 76px; }
+.game[aria-checked="true"] { border-color: var(--accent); color: var(--accent); }
+.game:focus-visible, .menu-link:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.menu-link {
+  font: inherit; font-size: .95rem; cursor: pointer; text-align: center;
+  border: 0; border-radius: 10px; background: transparent; color: var(--muted); padding: 10px;
+}
+.menu-link:hover { background: var(--bg); }
 .icon-btn {
   flex: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
   border: 2px solid var(--line); background: transparent; color: var(--muted);
@@ -340,7 +361,7 @@ const SVGS = {
 
 const CUSTOM = { id: "custom", name: "Moje słówka", color: "#2a7d6b", words: [] };
 
-const state = { cat: "szkolne", mode: "print", pl: false, upper: false, idx: 0, shown: false, order: null, q: null, score: 0 };
+const state = { cat: "szkolne", mode: "print", pl: false, upper: false, idx: 0, shown: false, order: null, q: null, score: 0, menu: false };
 const $ = (s) => document.querySelector(s);
 const esc = (s) => s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 
@@ -402,11 +423,28 @@ function renderPrint(c) {
 function ensureOrder(c) {
   if (!state.order || state.order.length !== c.words.length) { state.order = shuffle(c.words.length); state.idx = 0; state.q = null; }
 }
+const K = 'stroke="#2b2b2b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"';
+const GAMES = [
+  ["play", "Fiszki", `<rect x="12" y="12" width="34" height="46" rx="5" fill="#7fb2ee" ${K} transform="rotate(-12 29 35)"/>
+    <rect x="25" y="12" width="34" height="46" rx="5" fill="#ffffff" ${K}/>
+    <path d="M42 20 l3.2 6.6 7.2 1 -5.2 5 1.2 7.2 -6.4-3.4 -6.4 3.4 1.2-7.2 -5.2-5 7.2-1z" fill="#f6c915" ${K} stroke-width="2"/>
+    <rect x="31" y="46" width="22" height="5" rx="2.5" fill="#2a7d6b"/>`],
+  ["quiz", "Wybierz obrazek", `<rect x="8" y="8" width="26" height="26" rx="5" fill="#ffffff" ${K}/><circle cx="21" cy="21" r="6" fill="#e53935"/>
+    <rect x="38" y="8" width="26" height="26" rx="5" fill="#ffffff" ${K}/><path d="M51 14 L58 27 H44 Z" fill="#f6c915"/>
+    <rect x="8" y="38" width="26" height="26" rx="5" fill="#ffffff" ${K}/><rect x="15" y="45" width="12" height="12" rx="2" fill="#4f8fd6"/>
+    <rect x="38" y="38" width="26" height="26" rx="5" fill="#2e9d4a" ${K}/><path d="M44 51 l5 5 l9 -10" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`],
+];
 const topicsBar = () => `<nav class="topics" aria-label="Temat">
-      <button type="button" class="icon-btn" id="exit-play" aria-label="Ustawienia i karty do druku">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      <button type="button" class="icon-btn" id="menu-btn" aria-label="Menu" aria-haspopup="menu" aria-expanded="${state.menu}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="${state.menu ? "M6 6l12 12M18 6L6 18" : "M4 7h16M4 12h16M4 17h16"}"/></svg>
       </button>
       <div class="topic-scroll" id="topic-scroll">${chips()}</div>
+      ${state.menu ? `<div class="menu" role="menu">
+        <div class="games">${GAMES.map(([m, label, icon]) =>
+          `<button type="button" class="game" role="menuitemradio" aria-checked="${state.mode === m}" data-mode="${m}">
+             <svg viewBox="0 0 72 72" aria-hidden="true">${icon}</svg><span>${label}</span></button>`).join("")}</div>
+        <button type="button" class="menu-link" role="menuitem" data-mode="print">Karty do druku i ustawienia</button>
+      </div>` : ""}
     </nav>`;
 
 // The target word plus three other words from the same topic, in random positions.
@@ -440,9 +478,16 @@ function choose(i) {
     q.solved = true;
     if (!q.wrong.length) state.score++;
     render();
-    setTimeout(() => { if (state.q === q) next(); }, 1100);
+    // Move on once the praise has been said; the timer covers devices without speech.
+    let done = false;
+    const go = () => { if (!done && state.q === q) { done = true; setTimeout(() => { if (state.q === q) next(); }, 300); } };
+    say(pick(PRAISE), { rate: 0.95, onend: go });
+    setTimeout(go, 2600);
   } else {
     q.wrong.push(i); q.last = i; render();
+    // Encourage, then repeat the word so the child hears it again.
+    say(pick(RETRY), { rate: 0.95 });
+    say(current().words[q.target][1], { queue: true });
   }
 }
 
@@ -479,17 +524,30 @@ function render() {
   centerTopic();
 }
 
-function speak() {
-  const c = current(), w = c.words[state.order?.[state.idx]];
-  if (!w) return;
+// Speaks English text; `queue` waits for what is already being said, `onend` fires once speech finishes.
+function say(txt, { queue = false, rate = 0.8, onend } = {}) {
   try {
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(w[1]);
-    u.lang = "en-GB"; u.rate = 0.8;
+    if (!queue) speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(txt);
+    u.lang = "en-GB"; u.rate = rate;
     const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith("en"));
     if (v) u.voice = v;
+    if (onend) u.onend = u.onerror = onend;
     speechSynthesis.speak(u);
-  } catch (e) {}
+    return true;
+  } catch (e) { return false; }
+}
+function speak() {
+  const w = current().words[state.order?.[state.idx]];
+  if (w) say(w[1]);
+}
+
+const PRAISE = ["Great!", "Perfect!", "Good job!", "Well done!", "Excellent!", "Super!", "Brilliant!", "Fantastic!", "Awesome!", "Yes, that's right!"];
+const RETRY = ["Try again!", "Oops! Try again.", "Not quite. Try again!", "Almost! Try again."];
+let lastPhrase = "";
+function pick(list) {
+  const opts = list.filter(p => p !== lastPhrase);
+  return (lastPhrase = opts[Math.floor(Math.random() * opts.length)]);
 }
 function next() {
   const n = current().words.length;
@@ -510,6 +568,14 @@ function setMode(m) {
 }
 
 document.addEventListener("click", (e) => {
+  const item = e.target.closest("[data-mode]");
+  if (item) {
+    state.menu = false;
+    if (item.dataset.mode === state.mode) render(); else setMode(item.dataset.mode);
+    return;
+  }
+  if (e.target.closest("#menu-btn")) { state.menu = !state.menu; render(); return; }
+  if (state.menu) { state.menu = false; render(); return; }  // tap outside only closes the menu
   const chip = e.target.closest("[data-cat]");
   if (chip) {
     state.cat = chip.dataset.cat; state.order = null; state.q = null; state.shown = false; save(); render();
@@ -520,12 +586,12 @@ document.addEventListener("click", (e) => {
   if (tile) { choose(+tile.dataset.choice); return; }
   const id = e.target.closest("[id]")?.id;
   if (id === "mode-print" || id === "mode-play" || id === "mode-quiz") setMode(id.slice(5));
-  else if (id === "exit-play") setMode("print");
   else if (id === "flash") reveal();
   else if (id === "say-word") speak();
   else if (id === "next") next();
 });
 document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && state.menu) { state.menu = false; render(); $("#menu-btn")?.focus(); return; }
   if (state.mode !== "play" || e.target.tagName === "TEXTAREA") return;
   if (e.key === "ArrowRight") next();
   else if ((e.key === " " || e.key === "Enter") && document.activeElement?.id === "flash") { e.preventDefault(); reveal(); }

@@ -96,7 +96,9 @@ textarea {
   padding: 6px 4px; min-height: 2.2em; display: grid; place-items: center;
   border-top: 2px dashed var(--cut);
 }
-.word small { display: block; font-weight: 400; font-size: .5em; color: #6a7774; margin-top: 3px; }
+/* --fit shrinks only the text of long words; line-height compensates so the card keeps its size */
+.word > span { font-size: calc(1em * var(--fit, 1)); line-height: calc(1.1 / var(--fit, 1)); }
+.word small { display: block; font-weight: 400; line-height: 1.1; font-size: calc(.5em / var(--fit, 1)); color: #6a7774; margin-top: 3px; }
 
 /* ---------- Flashcard mode ---------- */
 /* Full-screen on the phone: topic strip, card filling the rest, one Next button */
@@ -270,6 +272,12 @@ const CATS = [
   { id: "body", name: "Ciało", color: "#c4566b", words: [
     ["👁️","eye","oko"],["👂","ear","ucho"],["👃","nose","nos"],["👄","mouth","usta"],
     ["🦷","tooth","ząb"],["✋","hand","ręka"],["🦵","leg","noga"],["🦶","foot","stopa"]]},
+  { id: "family", name: "Rodzina", color: "#9c5b9e", words: [
+    ["svg:family","family","rodzina"],["svg:mum","mum","mama"],["svg:dad","dad","tata"],["svg:parents","parents","rodzice"],
+    ["svg:sister","sister","siostra"],["svg:brother","brother","brat"],["svg:baby","baby","dzidziuś"],
+    ["svg:daughter","daughter","córka"],["svg:son","son","syn"],
+    ["svg:grandma","grandma","babcia"],["svg:grandpa","grandpa","dziadek"],["svg:grandparents","grandparents","dziadkowie"],
+    ["svg:granddaughter","granddaughter","wnuczka"],["svg:grandson","grandson","wnuk"]]},
 ];
 const LIST = { id: "szkolne", name: "Szkolne", color: "#2a7d6b", words: [
   ["svg:computer","computer","komputer"],["svg:crayon","crayon","kredka"],["svg:pen","pen","długopis"],["svg:pencil","pencil","ołówek"],
@@ -359,6 +367,101 @@ const SVGS = {
     <rect x="15" y="42" width="6" height="46" fill="${WOOD_DARK}" ${S}/><rect x="79" y="42" width="6" height="46" fill="${WOOD_DARK}" ${S}/>${BALL(50, 73.5)}`,
 };
 
+/* ---------- Family: people drawn from parts. Local coords: feet at y=0, up is negative.
+   Relationship words (daughter, grandson…) show the context people faded in grey
+   and the person the word names in full colour. */
+const SKIN = "#f5c9a0", HAIR = "#7a4a2a", KIDHAIR = "#b5651d", GREY_HAIR = "#d6dbe0";
+const PERSON = (() => {
+  const face = (cy, k, { glasses = false, tache = false } = {}) => `
+    <circle cx="-4" cy="${cy}" r="1.7" fill="#2b2b2b"/><circle cx="4" cy="${cy}" r="1.7" fill="#2b2b2b"/>
+    ${glasses ? `<circle cx="-4.4" cy="${cy}" r="3.8" fill="#ffffff" fill-opacity=".25" ${k}/><circle cx="4.4" cy="${cy}" r="3.8" fill="#ffffff" fill-opacity=".25" ${k}/><path d="M-0.6 ${cy} H0.6" ${k}/>` : ""}
+    ${tache ? `<path d="M-5.5 ${cy + 5.5} Q0 ${cy + 2} 5.5 ${cy + 5.5} Q0 ${cy + 7.5} -5.5 ${cy + 5.5} Z" fill="${GREY_HAIR}" ${k}/>`
+            : `<path d="M-3.5 ${cy + 5} Q0 ${cy + 8} 3.5 ${cy + 5}" fill="none" ${k}/>`}
+    <circle cx="-7" cy="${cy + 4}" r="2" fill="#f28fb0" opacity=".55"/><circle cx="7" cy="${cy + 4}" r="2" fill="#f28fb0" opacity=".55"/>`;
+  const limb = (d, col, w, s) => `<path d="${d}" fill="none" stroke="#2b2b2b" stroke-width="${w + 5 / s}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
+  const hand = (x, y, k) => `<circle cx="${x}" cy="${y}" r="3.2" fill="${SKIN}" ${k}/>`;
+  const shoes = (x, y, col, k) => `<ellipse cx="${-x}" cy="${y}" rx="4.6" ry="2.6" fill="${col}" ${k}/><ellipse cx="${x}" cy="${y}" rx="4.6" ry="2.6" fill="${col}" ${k}/>`;
+  const legs = (top, col, k, w = 5) => `<rect x="${-2 - w}" y="${top}" width="${w}" height="${-3 - top}" fill="${col}" ${k}/><rect x="2" y="${top}" width="${w}" height="${-3 - top}" fill="${col}" ${k}/>`;
+  const arms = (y0, y1, x0, x1, col, k, s) => limb(`M${-x0} ${y0} L${-x1} ${y1}`, col, 6, s) + limb(`M${x0} ${y0} L${x1} ${y1}`, col, 6, s) + hand(-x1, y1 + 1, k) + hand(x1, y1 + 1, k);
+  const head = (cy, k, r = 11) => `<circle cx="0" cy="${cy}" r="${r}" fill="${SKIN}" ${k}/>`;
+  const fringe = (cy, col, k) => `<path d="M-11 ${cy - 1} Q-10 ${cy - 12} 0 ${cy - 12} Q10 ${cy - 12} 11 ${cy - 1} Q5 ${cy - 7} -1 ${cy - 5} Q-7 ${cy - 7} -11 ${cy - 1} Z" fill="${col}" ${k}/>`;
+  const shortHair = (cy, col, k) => `<path d="M-11.5 ${cy} Q-12.5 ${cy - 13} 0 ${cy - 13} Q12.5 ${cy - 13} 11.5 ${cy} Q10 ${cy - 6} 5 ${cy - 7} L2 ${cy - 5} L0 ${cy - 7} Q-9 ${cy - 7} -11.5 ${cy} Z" fill="${col}" ${k}/>`;
+  return {
+    woman: (k, s) => `<path d="M-12.5 -58 Q-14 -74 0 -74 Q14 -74 12.5 -58 L13 -45 Q0 -42 -13 -45 Z" fill="${HAIR}" ${k}/>
+      ${legs(-21, SKIN, k, 4)}${shoes(4.5, -2.5, "#e53935", k)}${arms(-46, -29, 8, 14, SKIN, k, s)}
+      <path d="M-8 -50 Q0 -53 8 -50 L15 -19 Q0 -16 -15 -19 Z" fill="#e2577a" ${k}/>
+      ${head(-60, k)}${fringe(-60, HAIR, k)}${face(-60, k)}`,
+    man: (k, s) => `${legs(-25, "#3d5a80", k, 6)}${shoes(4.5, -2.5, "#5a3a22", k)}${arms(-46, -27, 9, 15, "#4f8fd6", k, s)}
+      <rect x="-11" y="-50" width="22" height="28" rx="5" fill="#4f8fd6" ${k}/><path d="M-4 -50 L0 -45 L4 -50" fill="none" ${k}/>
+      ${head(-60, k)}${shortHair(-60, "#5a3a22", k)}${face(-60, k)}`,
+    grandma: (k, s) => `<circle cx="0" cy="-74" r="5.5" fill="${GREY_HAIR}" ${k}/>
+      ${legs(-21, SKIN, k, 4)}${shoes(4.5, -2.5, "#7a4a2a", k)}${arms(-46, -29, 8, 14, "#8e44ad", k, s)}
+      <path d="M-8 -50 Q0 -53 8 -50 L15 -19 Q0 -16 -15 -19 Z" fill="#8e44ad" ${k}/>
+      <path d="M-7 -40 H7" stroke="#ffffff" stroke-opacity=".5" stroke-width="2.5" stroke-dasharray="1 4" stroke-linecap="round"/>
+      ${head(-60, k)}<path d="M-12 -57 Q-13 -72 0 -72 Q13 -72 12 -57 Q9 -66 0 -66 Q-9 -66 -12 -57 Z" fill="${GREY_HAIR}" ${k}/>
+      ${face(-60, k, { glasses: true })}`,
+    grandpa: (k, s) => `${legs(-25, "#6b7280", k, 6)}${shoes(4.5, -2.5, "#5a3a22", k)}${arms(-46, -27, 9, 15, "#a86d36", k, s)}
+      <rect x="-11" y="-50" width="22" height="28" rx="5" fill="#a86d36" ${k}/><path d="M0 -47 V-23" ${k}/>
+      <circle cx="-3" cy="-40" r="1.3" fill="#2b2b2b"/><circle cx="-3" cy="-32" r="1.3" fill="#2b2b2b"/>
+      ${head(-60, k)}<path d="M-11.6 -57 Q-12.5 -66 -8 -68 L-7 -60 Z M11.6 -57 Q12.5 -66 8 -68 L7 -60 Z" fill="${GREY_HAIR}" ${k}/>
+      ${face(-60, k, { glasses: true, tache: true })}`,
+    girl: (k, s) => `<circle cx="-12.5" cy="-52" r="4.5" fill="${KIDHAIR}" ${k}/><circle cx="12.5" cy="-52" r="4.5" fill="${KIDHAIR}" ${k}/>
+      ${legs(-17, SKIN, k, 4)}${shoes(4.5, -2.5, "#e53935", k)}${arms(-36, -23, 6, 11, SKIN, k, s)}
+      <path d="M-7 -39 Q0 -41 7 -39 L12 -16 Q0 -13 -12 -16 Z" fill="#f07fb0" ${k}/>
+      ${head(-49, k)}${fringe(-49, KIDHAIR, k)}
+      <path d="M-14 -56 l-4 -3 v6 Z M-14 -56 l4 -3 v6 Z" fill="#f6c915" ${k}/>
+      ${face(-49, k)}`,
+    boy: (k, s) => `${legs(-18, "#1e66d0", k, 5)}${shoes(4.5, -2.5, "#2b2b2b", k)}${arms(-36, -22, 7, 12, SKIN, k, s)}
+      ${limb("M-7 -36 L-9 -31 M7 -36 L9 -31", "#2e9d4a", 7, s)}
+      <rect x="-9" y="-39" width="18" height="22" rx="4" fill="#2e9d4a" ${k}/><path d="M-5 -28 H5" stroke="#f6c915" stroke-width="3" stroke-linecap="round"/>
+      ${head(-49, k)}${shortHair(-49, KIDHAIR, k)}<path d="M0 -62 q3 -5 6 -3" fill="none" ${k}/>
+      ${face(-49, k)}`,
+    baby: (k, s) => `<ellipse cx="-8" cy="-4" rx="6" ry="4" fill="#f6c915" ${k}/><ellipse cx="8" cy="-4" rx="6" ry="4" fill="#f6c915" ${k}/>
+      ${arms(-22, -14, 8, 15, "#f6c915", k, s)}
+      <ellipse cx="0" cy="-15" rx="12" ry="13" fill="#f6c915" ${k}/><path d="M-6 -14 Q0 -11 6 -14" fill="none" stroke="#e0ab0c" stroke-width="2.5" stroke-linecap="round"/>
+      ${head(-37, k, 13)}<path d="M-1 -50 q-1 -6 4 -6 q3 0 2 3" fill="none" ${k}/>
+      <circle cx="-4.5" cy="-38" r="1.9" fill="#2b2b2b"/><circle cx="4.5" cy="-38" r="1.9" fill="#2b2b2b"/>
+      <circle cx="-8" cy="-33" r="2.2" fill="#f28fb0" opacity=".6"/><circle cx="8" cy="-33" r="2.2" fill="#f28fb0" opacity=".6"/>
+      <ellipse cx="0" cy="-30.5" rx="5" ry="2.6" fill="#7fb2ee" ${k}/><circle cx="0" cy="-30.5" r="1.6" fill="#ffffff" ${k}/>`,
+  };
+})();
+/* scene: list of [type, x, scale, faded?]; everyone stands on y=94 */
+/* half-width (incl. hands/pigtails) and height (incl. hair/bun) of each figure in local units */
+const PERSON_BOX = { woman: [19.5, 76], man: [19.5, 75], grandma: [19.5, 81.5], grandpa: [19.5, 75],
+                     girl: [18, 63], boy: [17, 68], baby: [19.5, 58] };
+/* square viewBox that fits all figures with a small margin, so nothing gets cut off */
+const sceneBox = (people) => {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity;
+  for (const [type, x, s] of people) {
+    const [w, h] = PERSON_BOX[type];
+    x0 = Math.min(x0, x - w * s); x1 = Math.max(x1, x + w * s); y0 = Math.min(y0, 94 - h * s);
+  }
+  const y1 = 97, side = Math.max(x1 - x0, y1 - y0) + 4, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  return [cx - side / 2, cy - side / 2, side, side].map(v => v.toFixed(1)).join(" ");
+};
+const FAMILY_SCENE = (people) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${sceneBox(people)}">
+  <defs><filter id="fade"><feColorMatrix type="saturate" values="0"/></filter></defs>
+  ${people.map(([type, x, s, faded]) => {
+    const k = `stroke="#2b2b2b" stroke-width="${(2.5 / s).toFixed(2)}" stroke-linejoin="round" stroke-linecap="round"`;
+    return `<g transform="translate(${x} 94) scale(${s})"${faded ? ` filter="url(#fade)" opacity=".4"` : ""}>${PERSON[type](k, s)}</g>`;
+  }).join("")}</svg>`;
+Object.assign(SVGS, {
+  family:       FAMILY_SCENE([["man", 16, 1], ["woman", 40, 1], ["girl", 63, 0.95], ["boy", 85, 0.95]]),
+  mum:          FAMILY_SCENE([["woman", 50, 1.2]]),
+  dad:          FAMILY_SCENE([["man", 50, 1.2]]),
+  parents:      FAMILY_SCENE([["woman", 31, 1.1], ["man", 69, 1.1]]),
+  sister:       FAMILY_SCENE([["girl", 32, 1.25], ["boy", 69, 1.25, true]]),
+  brother:      FAMILY_SCENE([["girl", 31, 1.25, true], ["boy", 68, 1.25]]),
+  baby:         FAMILY_SCENE([["baby", 50, 1.55]]),
+  daughter:     FAMILY_SCENE([["woman", 18, 1.05, true], ["man", 82, 1.05, true], ["girl", 50, 1.1]]),
+  son:          FAMILY_SCENE([["woman", 18, 1.05, true], ["man", 82, 1.05, true], ["boy", 50, 1.1]]),
+  grandma:      FAMILY_SCENE([["grandma", 50, 1.2]]),
+  grandpa:      FAMILY_SCENE([["grandpa", 50, 1.2]]),
+  grandparents: FAMILY_SCENE([["grandma", 31, 1.1], ["grandpa", 69, 1.1]]),
+  granddaughter: FAMILY_SCENE([["grandma", 18, 1.05, true], ["grandpa", 82, 1.05, true], ["girl", 50, 1.1]]),
+  grandson:     FAMILY_SCENE([["grandma", 18, 1.05, true], ["grandpa", 82, 1.05, true], ["boy", 50, 1.1]]),
+});
+
 const CUSTOM = { id: "custom", name: "Moje słówka", color: "#2a7d6b", words: [] };
 
 const state = { cat: "szkolne", mode: "print", pl: false, upper: false, idx: 0, shown: false, order: null, q: null, score: 0, menu: false };
@@ -394,8 +497,10 @@ function pic(w) {
   return `<div class="pic" aria-hidden="true">${esc(w[0])}</div>`;
 }
 function text(w) { return esc(state.upper ? w[1].toUpperCase() : w[1]); }
+/* long single words (grandparents, granddaughter) get a proportionally smaller font so they fit the card */
+const fit = (w) => { const n = Math.max(...w[1].split(/\s+/).map(t => t.length)); return n > 9 ? ` style="--fit:${(9 / n).toFixed(2)}"` : ""; };
 function wordBox(w, withPl) {
-  return `<div class="word"><span>${text(w)}${withPl && w[2] ? `<small>${esc(w[2])}</small>` : ""}</span></div>`;
+  return `<div class="word"${fit(w)}><span>${text(w)}${withPl && w[2] ? `<small>${esc(w[2])}</small>` : ""}</span></div>`;
 }
 
 const chips = () => allCats().map(c =>
@@ -498,7 +603,7 @@ function renderPlay(c) {
     ${topicsBar()}
     <div class="card big" id="flash" role="button" tabindex="0" aria-label="Pokaż i przeczytaj słowo">
       ${pic(w)}
-      <div class="word ${state.shown ? "" : "hidden-word"}"><span>${text(w)}${state.shown && state.pl && w[2] ? `<small>${esc(w[2])}</small>` : ""}</span></div>
+      <div class="word ${state.shown ? "" : "hidden-word"}"${fit(w)}><span>${text(w)}${state.shown && state.pl && w[2] ? `<small>${esc(w[2])}</small>` : ""}</span></div>
     </div>
     <button type="button" class="btn next" id="next">Następny</button>
   </div>`;

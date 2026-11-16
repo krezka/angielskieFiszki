@@ -279,7 +279,8 @@ const CATS = [
     ["svg:sister","sister","siostra"],["svg:brother","brother","brat"],["svg:baby","baby","dzidziuś"],
     ["svg:daughter","daughter","córka"],["svg:son","son","syn"],
     ["svg:grandma","grandma","babcia"],["svg:grandpa","grandpa","dziadek"],["svg:grandparents","grandparents","dziadkowie"],
-    ["svg:granddaughter","granddaughter","wnuczka"],["svg:grandson","grandson","wnuk"]]},
+    ["svg:granddaughter","granddaughter","wnuczka"],["svg:grandson","grandson","wnuk"],
+    ["svg:aunt","aunt","ciocia"],["svg:uncle","uncle","wujek"]]},
 ];
 const LIST = { id: "szkolne", name: "Szkolne", color: "#2a7d6b", words: [
   ["svg:computer","computer","komputer"],["svg:crayon","crayon","kredka"],["svg:pen","pen","długopis"],["svg:pencil","pencil","ołówek"],
@@ -407,6 +408,18 @@ const PERSON = (() => {
       <circle cx="-3" cy="-40" r="1.3" fill="#2b2b2b"/><circle cx="-3" cy="-32" r="1.3" fill="#2b2b2b"/>
       ${head(-60, k)}<path d="M-11.6 -57 Q-12.5 -66 -8 -68 L-7 -60 Z M11.6 -57 Q12.5 -66 8 -68 L7 -60 Z" fill="${GREY_HAIR}" ${k}/>
       ${face(-60, k, { glasses: true, tache: true })}`,
+    aunt: (k, s) => `<path d="M-13.5 -58 Q-14.5 -75 0 -75 Q14.5 -75 13.5 -58 L13.5 -50 Q0 -48 -13.5 -50 Z" fill="#e8b84a" ${k}/>
+      ${legs(-21, SKIN, k, 4)}${shoes(4.5, -2.5, "#2b2b2b", k)}${arms(-46, -29, 8, 14, SKIN, k, s)}
+      <path d="M-8 -50 Q0 -53 8 -50 L15 -19 Q0 -16 -15 -19 Z" fill="#2e9d4a" ${k}/>
+      <path d="M-11 -30 Q0 -27 11 -30" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="2.5" stroke-linecap="round"/>
+      ${head(-60, k)}${fringe(-60, "#e8b84a", k)}
+      <circle cx="-11.5" cy="-55" r="1.8" fill="#f6c915" ${k}/><circle cx="11.5" cy="-55" r="1.8" fill="#f6c915" ${k}/>
+      ${face(-60, k)}`,
+    uncle: (k, s) => `${legs(-25, "#5a3a22", k, 6)}${shoes(4.5, -2.5, "#2b2b2b", k)}${arms(-46, -27, 9, 15, "#f28a1c", k, s)}
+      <rect x="-11" y="-50" width="22" height="28" rx="5" fill="#f28a1c" ${k}/><path d="M-4 -50 L0 -45 L4 -50" fill="none" ${k}/>
+      ${head(-60, k)}${shortHair(-60, "#c0592f", k)}
+      <path d="M-11 -61 Q-11.5 -47 0 -46.5 Q11.5 -47 11 -61 Q8 -53 0 -54 Q-8 -53 -11 -61 Z" fill="#c0592f" ${k}/>
+      ${face(-60, k)}`,
     girl: (k, s) => `<circle cx="-12.5" cy="-52" r="4.5" fill="${KIDHAIR}" ${k}/><circle cx="12.5" cy="-52" r="4.5" fill="${KIDHAIR}" ${k}/>
       ${legs(-17, SKIN, k, 4)}${shoes(4.5, -2.5, "#e53935", k)}${arms(-36, -23, 6, 11, SKIN, k, s)}
       <path d="M-7 -39 Q0 -41 7 -39 L12 -16 Q0 -13 -12 -16 Z" fill="#f07fb0" ${k}/>
@@ -429,8 +442,8 @@ const PERSON = (() => {
 })();
 /* scene: list of [type, x, scale, faded?]; everyone stands on y=94 */
 /* half-width (incl. hands/pigtails) and height (incl. hair/bun) of each figure in local units */
-const PERSON_BOX = { woman: [19.5, 76], man: [19.5, 75], grandma: [19.5, 81.5], grandpa: [19.5, 75],
-                     girl: [18, 63], boy: [17, 68], baby: [19.5, 58] };
+const PERSON_BOX = { woman: [19.5, 76], man: [19.5, 75], aunt: [19.5, 77], uncle: [19.5, 75], grandma: [19.5, 81.5], grandpa: [19.5, 75],
+                     girl: [19.5, 63], boy: [17, 68], baby: [19.5, 58] };
 /* square viewBox that fits all figures with a small margin, so nothing gets cut off */
 const sceneBox = (people) => {
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity;
@@ -462,6 +475,9 @@ Object.assign(SVGS, {
   grandparents: FAMILY_SCENE([["grandma", 31, 1.1], ["grandpa", 69, 1.1]]),
   granddaughter: FAMILY_SCENE([["grandma", 18, 1.05, true], ["grandpa", 82, 1.05, true], ["girl", 50, 1.1]]),
   grandson:     FAMILY_SCENE([["grandma", 18, 1.05, true], ["grandpa", 82, 1.05, true], ["boy", 50, 1.1]]),
+  // aunt / uncle: the child and their parent faded, the aunt/uncle (with a distinct look) in colour
+  aunt:         FAMILY_SCENE([["girl", 20, 1.05, true], ["woman", 48, 1.05, true], ["aunt", 80, 1.05]]),
+  uncle:        FAMILY_SCENE([["boy", 20, 1.05, true], ["man", 48, 1.05, true], ["uncle", 80, 1.05]]),
 });
 
 /* ---------- animals */

@@ -475,7 +475,19 @@ try {
   else if (matchMedia("(max-width: 640px)").matches) state.mode = "play";
   if (saved.custom) $("#custom").value = saved.custom;
 } catch (e) {}
+/* Category and mode live in the URL hash (e.g. #family/play), so a refresh or a shared link shows the same view. */
+const MODES = ["print", "play", "quiz"];
+function writeUrl() {
+  const h = `#${state.cat}/${state.mode}`;
+  if (location.hash !== h) history.replaceState(null, "", h);
+}
+function readUrl() {
+  const [cat, mode] = decodeURIComponent(location.hash.slice(1)).split("/");
+  if (allCats().some(c => c.id === cat)) state.cat = cat;
+  if (MODES.includes(mode)) state.mode = mode;
+}
 function save() {
+  writeUrl();
   try { localStorage.setItem("karty3", JSON.stringify({ cat: state.cat, mode: state.mode, pl: state.pl, upper: state.upper, custom: $("#custom").value })); } catch (e) {}
 }
 
@@ -713,7 +725,16 @@ $("#custom").addEventListener("input", () => {
 });
 
 parseCustom();
+readUrl();
+writeUrl();
 render();
+window.addEventListener("hashchange", () => {
+  const before = `${state.cat}/${state.mode}`;
+  readUrl();
+  writeUrl();
+  if (`${state.cat}/${state.mode}` === before) return;
+  state.order = null; state.q = null; state.shown = false; state.score = 0; state.menu = false; render();
+});
 </script>
 
 </body>
